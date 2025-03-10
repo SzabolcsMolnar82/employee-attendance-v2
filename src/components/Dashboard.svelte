@@ -1,15 +1,16 @@
 <script>
     import { onMount } from 'svelte';
+    import { API_BASE } from '../config';
   
     let token = localStorage.getItem('token');
     let attendance = [];
   
     if (!token) {
-      window.location.href = '/login'; // Ha nincs token, irány a login oldal
+      window.location.href = '/login';
     }
   
     async function fetchAttendance() {
-      const res = await fetch('http://localhost:7032/api/Attendance/check-in', {
+      const res = await fetch(`${API_BASE}/Attendance/get-attendance`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -21,17 +22,37 @@
       }
     }
   
+    async function checkIn() {
+      await fetch(`${API_BASE}/Attendance/check-in`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      fetchAttendance();
+    }
+  
+    async function checkOut() {
+      await fetch(`${API_BASE}/Attendance/check-out`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      fetchAttendance();
+    }
+  
     function logout() {
       localStorage.removeItem('token');
-      window.location.href = '/login'; // Kijelentkezés után visszadob a bejelentkezési oldalra
+      window.location.href = '/login';
     }
   
     onMount(fetchAttendance);
   </script>
   
-  <main class="container">
+  <main>
     <h1>Dolgozói Dashboard</h1>
     <button on:click={logout}>Kilépés</button>
+  
+    <button on:click={checkIn}>Munka megkezdése</button>
+    <button on:click={checkOut}>Munka befejezése</button>
+  
     <h2>Napi jelenlét</h2>
     <ul>
       {#each attendance as entry}
@@ -39,12 +60,3 @@
       {/each}
     </ul>
   </main>
-  
-  <style>
-    .container {
-      max-width: 600px;
-      margin: auto;
-      text-align: center;
-    }
-  </style>
-  
