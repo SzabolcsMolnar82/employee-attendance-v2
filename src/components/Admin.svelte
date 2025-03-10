@@ -1,13 +1,17 @@
 <script>
+    import { onMount } from 'svelte';
+    import { API_BASE } from '../config';
+  
     let token = localStorage.getItem('token');
-    let employees = []; // Itt deklaráljuk a változót
+    let employees = [];
+    let newEmployee = { nev: '', felhasznaloNev: '', jelszo: '' };
   
     if (!token) {
-      window.location.href = '/login'; // Irányítás bejelentkezési oldalra
+      window.location.href = '/login';
     }
   
     async function fetchEmployees() {
-      const res = await fetch('http://localhost:7032/api/Employees', {
+      const res = await fetch(`${API_BASE}/Admin/get-employees`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -19,27 +23,62 @@
       }
     }
   
+    async function addEmployee() {
+      const res = await fetch(`${API_BASE}/Admin/add-employee`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newEmployee)
+      });
+  
+      if (res.ok) {
+        newEmployee = { nev: '', felhasznaloNev: '', jelszo: '' };
+        fetchEmployees();
+      } else {
+        console.error('Hiba a dolgozó hozzáadásakor');
+      }
+    }
+  
+    async function deleteEmployee(id) {
+      const res = await fetch(`${API_BASE}/Admin/delete-employee/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+  
+      if (res.ok) {
+        fetchEmployees();
+      } else {
+        console.error('Hiba a dolgozó törlésekor');
+      }
+    }
+  
     function logout() {
       localStorage.removeItem('token');
-      window.location.href = '/login'; // Kijelentkezés után átdob a login oldalra
+      window.location.href = '/login';
     }
+  
+    onMount(fetchEmployees);
   </script>
   
-  <main class="container">
-    <h1>Admin felület</h1>
+  <main>
+    <h1>Admin Felület</h1>
     <button on:click={logout}>Kilépés</button>
-    <h2>Dolgozók listája</h2>
+  
+    <h2>Dolgozók</h2>
     <ul>
       {#each employees as employee}
-        <li>{employee.name} - {employee.position}</li>
+        <li>
+          {employee.nev} - {employee.felhasznaloNev}
+          <button on:click={() => deleteEmployee(employee.id)}>Törlés</button>
+        </li>
       {/each}
     </ul>
-  </main>
   
-  <style>
-    .container {
-      max-width: 600px;
-      margin: auto;
-      text-align: center;
-    }
-  </style>
+    <h2>Új dolgozó hozzáadása</h2>
+    <input bind:value={newEmployee.nev} placeholder="Név" />
+    <input bind:value={newEmployee.felhasznaloNev} placeholder="Felhasználónév" />
+    <input bind:value={newEmployee.jelszo} type="password" placeholder="Jelszó" />
+    <button on:click={addEmployee}>Hozzáadás</button>
+  </main>
